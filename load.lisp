@@ -1,0 +1,5 @@
+(ql:quickload "cffi")
+(ql:quickload "osicat")
+(ql:quickload "trivial-garbage")
+(ql:quickload "zlib")
+(load "packages.lisp")
