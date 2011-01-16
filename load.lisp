@@ -2,4 +2,5 @@
 (ql:quickload "osicat")
 (ql:quickload "trivial-garbage")
 (ql:quickload "zlib")
+(ql:quickload "cl-fad")
 (load "packages.lisp")

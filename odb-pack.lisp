@@ -362,12 +362,82 @@ offset of this object in the pack (the packs use deltas)."
     (read-sequence vector stream)
     (decode-pack packfile vector offset)))
 
-(defun get-packfile-data (packfile oid)
+(defgeneric get-packfile-data (packfile oid))
+
+(defmethod get-packfile-data ((packfile packfile-v2) oid)
   "Search this packfile for the given oid data.  If present, returns
 the first-level gunzip of the data, else NIL."
   (let ((offset (funcall (packfile-searcher packfile) oid)))
     (when offset
       (get-packdata-at-offset packfile offset))))
+
+(defclass loose-objects ()
+  ((path :initarg :path :reader loose-objects-path)))
+
+(defmethod initialize-instance :around ((instance loose-objects)
+					&rest initargs
+					&key path)
+  (let ((true-path (fad:directory-exists-p path)))
+    (assert true-path)
+    (apply #'call-next-method instance :path true-path initargs)))
+
+;;; The loose pack consists of a type at the beginning of the buffer,
+;;; followed by an ascii size and a null.  Following the null is the
+;;; rest of the payload.
+(defun decode-loose-pack (data)
+  (let* ((space-at (position 32 data))
+	 (null-at (position 0 data))
+	 (raw-kind (map 'string #'code-char (subseq data 0 space-at)))
+	 (payload (make-array (- (length data) null-at 1)
+			      :element-type '(unsigned-byte 8)
+			      :displaced-to data
+			      :displaced-index-offset (1+ null-at)))
+	 (kind (cond ((string= raw-kind "commit") :commit)
+		     ((string= raw-kind "tree") :tree)
+		     ((string= raw-kind "blob") :blob)
+		     ((string= raw-kind "tag") :tag)
+		     (t (error "Unknown kind ~S in loose pack" raw-kind)))))
+    (values payload kind)))
+
+(defmethod get-packfile-data ((packfile loose-objects) oid)
+  (let* ((textual (decode-oid oid))
+	 (path (probe-file
+		(merge-pathnames
+		 (make-pathname :directory (list :relative (subseq textual 0 2))
+				:name (subseq textual 2)
+				:type nil)
+		 (loose-objects-path packfile))))
+	 (zdata (and path (load-file-into-memory path)))
+	 (data (and zdata (uncompress-data zdata))))
+    (and data (decode-loose-pack data))))
+
+(defclass repo-packdata ()
+  ((loose :reader repo-loose)
+   (packs :reader repo-packs)))
+
+(defmethod initialize-instance :after ((instance repo-packdata)
+				       &rest initargs
+				       &key path)
+  (declare (ignore initargs))
+  (setf (slot-value instance 'loose) (make-instance 'loose-objects :path path))
+  (let ((packfiles (directory (merge-pathnames
+			       (make-pathname :directory (list :relative "pack")
+					      :name :wild
+					      :type "pack")
+			       path))))
+    ;; TODO: Sort packfiles by newest first.
+    (setf (slot-value instance 'packs)
+	  (mapcar (lambda (name)
+		    (make-instance 'packfile-v2 :path name))
+		  packfiles))))
+
+(defmethod get-packfile-data ((packfile repo-packdata) oid)
+  (declare (optimize (debug 3)))
+  (iter (for pack in (cons (repo-loose packfile)
+			   (repo-packs packfile)))
+	(for (values data kind) = (get-packfile-data pack oid))
+	(when data
+	  (return (values data kind)))))
 
 (defun decode-oid (oid)
   "Decode an OID into a hex string representation."
