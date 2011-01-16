@@ -1,0 +1,25 @@
+cl-git
+
+A git repository reader in Common Lisp
+
+This started as at attempt to bind libgit2 from common lisp.  Although
+it seemed to work for small repositories, trying to do anything with
+the kernel git repo mostly just kept blowing my stack.
+
+Being the disturbed person I am, I've started hacking together a
+reader for git repositories directly in Common Lisp.
+
+It's not even packaged yet.
+
+Right now, all you can do is look up commits.  Most of the work was
+unpacking packs.  It only supports v2 packs, and the ref delta isn't
+supported, so it might just die.  But, I can read recent stuff out of
+the kernel repo just fine.
+
+  (defparameter *repo* (make-instance 'repo :path #p"/usr/src/linux/.git/"))
+  (repo-lookup *repo* "refs/heads/master")
+  (decode-commit *)
+  (repo-lookup *repo* (first (commit-parents *)))
+  (decode-commit *)
+
+I have no idea what I will do with this.
