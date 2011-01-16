@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package #:cl-git)
+(in-package #:cl-git.odb)
 
 ;;; First implementation will read the indexes into memory rather than
 ;;; using mmap.
