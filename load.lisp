@@ -3,4 +3,6 @@
 (ql:quickload "trivial-garbage")
 (ql:quickload "zlib")
 (ql:quickload "cl-fad")
+(ql:quickload "babel")
+(ql:quickload "cl-ppcre")
 (load "packages.lisp")

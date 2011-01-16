@@ -12,11 +12,15 @@
 (defpackage #:cl-git.repo
   (:use #:cl
 	#:iterate
-	#:cl-git.odb))
+	#:cl-git.odb)
+  (:export #:repo
+	   #:lookup-repo-ref
+	   #:repo-lookup))
 
 (defpackage #:cl-git
   (:nicknames #:git)
   (:use #:cl
 	#+(or) #:cffi
 	#:iterate
-	#:cl-git.odb))
+	#:cl-git.odb
+	#:cl-git.repo))
