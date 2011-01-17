@@ -320,6 +320,8 @@ packfile, or NIL if not found."
 		(inline-piece cmd))))
     result))
 
+;;; TODO cache both relative and SHA1 based deltas.
+
 (defun decode-pack (packfile bytes this-offset)
   "Decode the type/size header from the stream of bytes.  Returns two
 values, the type, and the uncompressed data.  THIS-OFFSET is the
@@ -352,7 +354,11 @@ offset of this object in the pack (the packs use deltas)."
 				(uncompress-data bytes :start index))
 		   base-type))))
       ((:ref-delta)
-       (error "TODO: ref-delta")))))
+       (multiple-value-bind (base-data base-type)
+	   (get-packfile-data packfile (subseq bytes index (+ index 20)))
+	 (values (patch-delta base-data
+			      (uncompress-data bytes :start (+ index 20)))
+		 base-type))))))
 
 (defun get-packdata-at-offset (packfile offset)
   (let* ((size (get-pack-size packfile offset))
