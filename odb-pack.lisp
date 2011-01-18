@@ -48,14 +48,28 @@
 ;;; with the high-bit set indicate an offset into the offset64 table
 ;;; for the actual 64-bit offset.
 
-(defun get-big-int-n (bytes data offset)
-  "Extract a big-endian number from the byte-array DATA starting at
-OFFSET for the given number of BYTES."
-  (reduce (lambda (a b)
-	    (logior (ash a 8) b))
-	  data
-	  :start offset
-	  :end (+ offset bytes)))
+(defmacro get-big-int-n (bytes data offset)
+  (check-type bytes (integer 1 8))
+  (let ((%data (gensym))
+	(%offset (gensym)))
+    `(let ((,%data ,data)
+	   (,%offset ,offset))
+       (logior ,@(iter (for pos from 0 below bytes)
+		       (for shift from (* 8 (1- bytes)) by -8)
+		       (for data = (if (zerop pos)
+				       `(aref ,%data ,%offset)
+				       `(aref ,%data (+ ,%offset ,pos))))
+		       (collect (if (zerop shift) data
+				    `(ash ,data ,shift))))))))
+
+;; (defun get-big-int-n (bytes data offset)
+;;   "Extract a big-endian number from the byte-array DATA starting at
+;; OFFSET for the given number of BYTES."
+;;   (reduce (lambda (a b)
+;; 	    (logior (ash a 8) b))
+;; 	  data
+;; 	  :start offset
+;; 	  :end (+ offset bytes)))
 
 (defun index-version (data)
   "With the data of a loaded index file, return the version number for it."
@@ -159,13 +173,25 @@ packfile, or NIL if not found."
 (defun create-pack-revindex (data packfile-size)
   (make-v2-index-function data
     (iter (for index from 0 below number)
-	  (collect (cons (get-offset index) index)
-	    into result)
+	  (with result = (make-array (1+ number) :fill-pointer 0))
+	  (vector-push (cons (get-offset index) index) result)
 	  (finally
-	   (return (sort (coerce (cons (cons (- packfile-size 20) -1)
-				       result)
-				 'vector)
-			 #'< :key #'car))))))
+	   (vector-push (cons (- packfile-size 20) -1) result)
+	   (return (sort result #'< :key #'car))))))
+
+;;; Need to re-organize this.
+;;; Alternate revindex, testing with a hashtable.
+#|
+(defun create-pack-revindex%% (data packfile-size)
+  (make-v2-index-function data
+    (iter (with table = (make-hash-table :size (1+ number)))
+	  (for index from 0 below number)
+	  (for offset (get-offset index))
+	  (setf (gethash offset table) index)
+	  (finally
+	   (setf (gethash (- packfile-size 20) -1) -1))
+)))
+|#
 
 (defun decode-object-type (type-code)
   (ecase type-code
@@ -245,17 +271,8 @@ packfile, or NIL if not found."
 
 (defun uncompress-data (data &key (start 0) end uncompressed-size)
   "Uncompress a segment of an array."
-  (unless end
-    (setf end (length data)))
-  (multiple-value-bind (expanded expanded-size)
-      (zlib:uncompress (make-array (- end start)
-				   :element-type '(unsigned-byte 8)
-				   :displaced-to data
-				   :displaced-index-offset start)
-		       :uncompressed-size uncompressed-size)
-    (assert (or (not uncompressed-size)
-		(= uncompressed-size expanded-size)))
-    (values expanded expanded-size)))
+  (declare (ignore uncompressed-size))
+  (chipz:decompress nil 'chipz:zlib data :input-start start :input-end end))
 
 (defun patch-delta (base delta)
   ;;; TODO implement patch-delta.

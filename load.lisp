@@ -1,7 +1,5 @@
-(ql:quickload "cffi")
-(ql:quickload "osicat")
 (ql:quickload "trivial-garbage")
-(ql:quickload "zlib")
+(ql:quickload "chipz")
 (ql:quickload "cl-fad")
 (ql:quickload "babel")
 (ql:quickload "cl-ppcre")
