@@ -2,7 +2,9 @@
 ;;;
 ;;; Repository management.
 
-(in-package #:cl-git.repo)
+(in-package #:cl-git)
+
+(defvar *current-repository*)
 
 (defstruct ref
   name tag commit)

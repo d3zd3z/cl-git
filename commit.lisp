@@ -29,7 +29,7 @@
     (or (ppcre:register-groups-bind (name email time zone)
 	    ("^([^<]+) <([^>]+)> (\\d+) ([+-]\\d+)$" text)
 	  (make-person :name name :email email
-		       :time time :zone zone))
+		       :time (parse-integer time) :zone zone))
 	(error "Unable to parse person ~S" text))))
 
 (defstruct commit

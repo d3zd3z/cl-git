@@ -4,3 +4,8 @@
 (ql:quickload "babel")
 (ql:quickload "cl-ppcre")
 (load "packages.lisp")
+(load "sorts.lisp")
+(load "odb-tree2.lisp")
+(load "odb-pack.lisp")
+(load "repo.lisp")
+(load "commit.lisp")
