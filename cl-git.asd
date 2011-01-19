@@ -8,7 +8,8 @@
 		 :chipz
 		 :cl-fad
 		 :babel
-		 :cl-ppcre)
+		 :cl-ppcre
+		 :iterate)
   :components ((:file "packages")
 	       (:file "sorts")
 	       (:file "odb-index2")
