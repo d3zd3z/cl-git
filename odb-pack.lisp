@@ -225,6 +225,8 @@ the first-level gunzip of the data, else NIL."
 	(when data
 	  (return (values data kind)))))
 
+(deftype oid () '(simple-array (unsigned-byte 8) (20)))
+
 (defun decode-oid (oid)
   "Decode an OID into a hex string representation."
   (check-type oid (array * (20)))
