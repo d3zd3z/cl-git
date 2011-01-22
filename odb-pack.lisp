@@ -137,13 +137,16 @@ offset of this object in the pack (the packs use deltas)."
 			      (uncompress-data bytes :start (+ index 20)))
 		 base-type))))))
 
+(defparameter *object-cache* (make-instance 'object-cache :size 256))
+
 (defun get-packdata-at-offset (packfile offset)
-  (let* ((size (get-pack-size (pack-file-index packfile) offset))
-	 (vector (make-array size :element-type '(unsigned-byte 8)))
-	 (stream (pack-stream packfile)))
-    (file-position stream offset)
-    (read-sequence vector stream)
-    (decode-pack packfile vector offset)))
+  (with-object-cache (*object-cache* (cons packfile offset))
+      (let* ((size (get-pack-size (pack-file-index packfile) offset))
+	     (vector (make-array size :element-type '(unsigned-byte 8)))
+	     (stream (pack-stream packfile)))
+	(file-position stream offset)
+	(read-sequence vector stream)
+	(decode-pack packfile vector offset))))
 
 (defgeneric get-packfile-data (packfile oid))
 

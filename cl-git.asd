@@ -12,6 +12,7 @@
 		 :iterate)
   :components ((:file "packages")
 	       (:file "sorts")
+	       (:file "cache")
 	       (:file "odb-index2")
 	       (:file "odb-pack")
 	       (:file "repo")
