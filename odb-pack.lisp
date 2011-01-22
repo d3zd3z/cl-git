@@ -231,8 +231,10 @@ the first-level gunzip of the data, else NIL."
   (iter (with result = (make-string 40))
 	(for element in-vector oid)
 	(for index from 0 by 2)
-	(replace result (format nil "~(~2,'0x~)" element)
-		 :start1 index)
+	(setf (char result index)
+	      (char #1="0123456789abcdef" (ldb (byte 4 4) element))
+	      (char result (1+ index))
+	      (char #1# (ldb (byte 4 0) element)))
 	(finally (return result))))
 
 (defun encode-oid (text-oid)
