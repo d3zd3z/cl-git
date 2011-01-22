@@ -66,8 +66,9 @@
 #|
 (defun ptest ()
   (let* ((*current-repository* (make-instance 'repo :path #p"/usr/src/linux/.git/"))
-	 (top (repo-lookup *current-repository* "refs/heads/master"))
-	 (top-commit (decode-commit top))
+	 (top (repo-lookup *current-repository*
+			   (resolve-ref *current-repository* "refs/heads/master")))
+	 (top-commit (parse-commit top))
 	 (tree (commit-tree top-commit))
 	 (count 0))
     ;; I know the sorts on the reverse lookups are taking most of the time.

@@ -71,16 +71,20 @@ if not found."
     (if path (load-loose-ref path ref-name)
 	(gethash ref-name (repo-packed-refs repo)))))
 
-(defun repo-lookup (repo name)
+(defun resolve-ref (repo ref)
+  "Resolve this REF into an oid in this repo."
+  (etypecase ref
+    ((simple-array (unsigned-byte 8) (20))
+     ref)
+    (ref (ref-commit ref))
+    (string (let ((resolved (lookup-repo-ref repo ref)))
+	      (if resolved (resolve-ref repo resolved)
+		  (encode-oid ref))))))
+
+(defun repo-lookup (repo oid)
   "Lookup a name in the repo, name can be a string, which will be
 tried as a REF or a HEAD.  If it isn't either, try converting it to an
 OID (which might fail).  If it is already an OID, just use it."
-  (etypecase name
-    (string (let ((resolved (lookup-repo-ref repo name)))
-	      (if resolved (repo-lookup repo resolved)
-		  (repo-lookup repo (encode-oid name)))))
-    (ref (repo-lookup repo (ref-commit name)))
-    ((simple-array (unsigned-byte 8) (20))
-     (get-packfile-data (repo-odb repo) name))))
+  (get-packfile-data (repo-odb repo) oid))
 
 ;;; Big TODO: repo operations need to rescan for changed packs and refs files.
